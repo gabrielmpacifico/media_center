@@ -28,7 +28,7 @@ O TVmaze é um catálogo de TV, então filmes e alguns títulos sem correspondê
 
 Os dados do TVmaze são publicados sob CC BY-SA e exigem atribuição. O app atribui a fonte na página **Backup & Configurações**. A API limita chamadas por IP (pelo menos 20 chamadas a cada 10 segundos); uso normal manual fica abaixo desse limite. Veja a [documentação oficial da API](https://www.tvmaze.com/api) para detalhes de cobertura, limites e licença.
 
-Quando o TVmaze informa que uma série terminou, o app marca o status como `Finalizada` e desativa futuras atualizações. Se a posição informada for o último episódio lançado, incrementa `vezes_completada`. Posições inválidas são recusadas e mostradas para correção.
+Quando o TVmaze informa que uma série terminou, o app só marca o status como `Finalizada` e desativa futuras atualizações se sua posição corresponder ao último episódio lançado. Caso contrário, preserva o status e mantém as atualizações disponíveis. Ao concluir o último episódio, incrementa `vezes_completada`. Posições inválidas são recusadas e mostradas para correção.
 
 O total de episódios assistidos e as horas são estimativas porque o frontmatter guarda apenas totais gerais, e as temporadas podem ter comprimentos diferentes. O app valida a existência exata da temporada/episódio durante o cadastro e quando atualiza pelo TVmaze.
 
