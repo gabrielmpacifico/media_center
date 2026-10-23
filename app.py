@@ -103,20 +103,22 @@ def add_form() -> None:
                     for error in position_errors:
                         st.error(error)
                     return
+            episodes_by_season = record.get("_episodes_by_season") or {}
+            final_season = max(episodes_by_season, default=0)
+            final_episode = max(episodes_by_season.get(final_season, []), default=0)
+            watched_final_episode = (bool(record.get("_show_ended")) and int(season) == final_season
+                                     and int(episode) == final_episode and final_episode > 0)
             record.update({
-                "status": "Finalizada" if record.get("_show_ended") else status,
+                "status": "Finalizada" if watched_final_episode else status,
                 "vezes_completada": int(times_done),
                 "temporada_atual": int(season),
                 "episodio_atual": int(episode),
                 "episodios_nao_assistidos": remaining_count(int(season), int(episode), record["total_temporadas"], record["total_episodios"]),
-                "imdb_atualizavel": not is_manual and not bool(record.get("_show_ended")),
+                "imdb_atualizavel": not is_manual and not watched_final_episode,
                 "data_atualizacao": date.today().isoformat(),
             })
-            if record.get("_show_ended") and record.get("_episodes_by_season"):
-                last_season = max(record["_episodes_by_season"])
-                last_episode = max(record["_episodes_by_season"][last_season])
-                if int(season) == last_season and int(episode) == last_episode and status not in ("Finalizada", "Concluída"):
-                    record["vezes_completada"] += 1
+            if watched_final_episode and status not in ("Finalizada", "Concluída"):
+                record["vezes_completada"] += 1
             save_record(record)
             st.session_state["flash"] = ("success", f"{record['titulo']} foi cadastrado com sucesso.")
             st.rerun()
@@ -224,14 +226,19 @@ def show_details(selected: dict) -> None:
                     episodes_by_season = fresh.get("_episodes_by_season") or {}
                     last_season = max(episodes_by_season, default=0)
                     last_episode = max(episodes_by_season.get(last_season, []), default=0)
-                    watched_final_episode = season_now == last_season and episode_now == last_episode and last_episode > 0
+                    watched_final_episode = (not refreshed_errors and season_now == last_season
+                                             and episode_now == last_episode and last_episode > 0)
                     if watched_final_episode and old_status not in ("Finalizada", "Concluída"):
                         selected["vezes_completada"] = int(selected.get("vezes_completada") or 0) + 1
-                    selected["status"] = "Finalizada"
-                    selected["imdb_atualizavel"] = False
-                    result_message = "A série foi marcada como Finalizada e as atualizações do catálogo foram desativadas."
-                    if watched_final_episode and old_status not in ("Finalizada", "Concluída"):
-                        result_message += " Como você já tinha visto todos os episódios lançados, somei uma conclusão."
+                    if watched_final_episode:
+                        selected["status"] = "Finalizada"
+                        selected["imdb_atualizavel"] = False
+                        result_message = "Você já assistiu ao último episódio lançado; marquei a série como Finalizada e desativei novas atualizações."
+                        if old_status not in ("Finalizada", "Concluída"):
+                            result_message += " Somei uma conclusão."
+                    else:
+                        result_message = (f"O TVmaze informa que a série terminou, mas sua posição está em T{season_now} Ep {episode_now}. "
+                                          f'Mantive o status "{selected.get("status")}". Assista ao último episódio e atualize novamente para concluir automaticamente.')
                 else:
                     result_message = "Dados e formulário atualizados com sucesso usando o TVmaze."
                 selected["data_atualizacao"] = date.today().isoformat()
