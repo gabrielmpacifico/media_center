@@ -23,6 +23,43 @@ def remaining_count(season: int, episode: int, total_seasons: int, total_episode
     return max(0, total_episodes - watched_count(season, episode, total_seasons, total_episodes))
 
 
+def watched_count_by_season(season: int, episode: int, episodes_by_season: dict[int, list[int]]) -> int:
+    """Count released episodes using TVmaze's actual season/episode numbers."""
+    if season <= 0 or episode <= 0:
+        return 0
+    watched_before = sum(len(numbers) for season_number, numbers in episodes_by_season.items()
+                         if int(season_number) < season)
+    watched_in_season = sum(1 for number in episodes_by_season.get(season, []) if int(number) <= episode)
+    return watched_before + watched_in_season
+
+
+def remaining_count_by_season(season: int, episode: int, episodes_by_season: dict[int, list[int]]) -> int:
+    total = sum(len(numbers) for numbers in episodes_by_season.values())
+    return max(0, total - watched_count_by_season(season, episode, episodes_by_season))
+
+
+def next_episode_to_watch(
+    season: int,
+    episode: int,
+    episodes_by_season: dict[int, list[int]],
+) -> tuple[int, int] | None:
+    if not episodes_by_season:
+        return (1, 1) if season <= 0 or episode <= 0 else (season, episode + 1)
+    seasons = sorted(int(value) for value, numbers in episodes_by_season.items() if numbers)
+    if not seasons:
+        return None
+    if season <= 0 or episode <= 0:
+        first_season = seasons[0]
+        return first_season, min(episodes_by_season[first_season])
+    next_numbers = [number for number in episodes_by_season.get(season, []) if number > episode]
+    if next_numbers:
+        return season, min(next_numbers)
+    for next_season in seasons:
+        if next_season > season:
+            return next_season, min(episodes_by_season[next_season])
+    return None
+
+
 def validate_position(
     season: int,
     episode: int,
